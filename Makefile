@@ -9,5 +9,9 @@ LDFLAGS = -maout-heap=8192 -maout-stack=4096
 ept: ept.c md5.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ ept.c
 
+# tiny ept: the bootstrap for floppy images, see tiny/tinyept.c
+tiny/tinyept: tiny/tinyept.c
+	$(CC) $(CFLAGS) -maout-heap=2048 -maout-stack=2048 -o $@ tiny/tinyept.c
+
 clean:
-	rm -f ept
+	rm -f ept tiny/tinyept
