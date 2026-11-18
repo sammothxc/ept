@@ -1,9 +1,7 @@
 # elksweb: graphical web browser for ELKS
 DESC="Graphical web browser"
 GIT=https://github.com/l00nix/ELKSWeb.git
-# 0.5 is released on main; keep development tags out of the stable catalogue.
 BRANCH=main
-STABLE_TAG=v0.5
 BUILD="ELKSWEB_ELKS=$ELKS sh toolchain/build-external.sh"
 FILES="build/elksweb:/bin/elksweb
 share/welcome.htm:/lib/elksweb/welcome.htm

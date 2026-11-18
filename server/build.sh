@@ -13,7 +13,8 @@
 #   DESC    (optional) one line description, shown by "ept search"
 #   BRANCH  (optional) branch nightlies are built from, default: remote HEAD
 #   STABLE  (optional) set to "no" to publish nightlies only and ignore tags
-#   STABLE_TAG (optional) exact release tag to build instead of the newest tag
+#   STABLE_TAG (optional) exact tag to build as stable instead of the newest
+#           release tag, for projects whose tags are not plain versions
 #   SKIP    (optional) set to "yes" to leave out files of a FILES directory that
 #           cannot be published (e.g. dangling symlinks) instead of failing
 #
@@ -21,7 +22,8 @@
 # repository (subdirectory RECIPES_SUBDIR), which is pulled before every cycle.
 #
 # Tagged releases go to /repo, nightlies to /repo/nightly:
-#   stable version  = newest git tag, without a leading v
+#   stable version  = newest release tag (v1.2, 1.2.3, ...), without a leading v;
+#                     pre-release tags (v0.5dev2, v1.0-rc1, ...) are never stable
 #   nightly version = <commit date>-<short hash> of the branch head
 
 REPO=${REPO:-/repo}
@@ -149,8 +151,9 @@ build_recipe()
 		git -C "$src" fetch -q --tags --prune origin || { log "ERROR: $name: fetch failed"; return 1; }
 	fi
 
-	# stable: newest tag (versionsort.suffix makes v0.3 newer than v0.3-dev1)
-	tag=$(git -C "$src" -c versionsort.suffix=- tag --sort=-v:refname | head -1)
+	# stable: newest release tag. Only plain versions qualify, so pre-release
+	# tags (v0.5dev2, v0.3-dev1, v1.0rc1, ...) only reach users as nightlies.
+	tag=$(git -C "$src" tag --sort=-v:refname | grep -E '^v?[0-9]+(\.[0-9]+)*$' | head -1)
 	if [ "$STABLE" != no ] && [ -n "$STABLE_TAG" ]; then
 		git -C "$src" rev-parse --verify --quiet "refs/tags/$STABLE_TAG^{commit}" >/dev/null || {
 			log "ERROR: $name: stable tag $STABLE_TAG does not exist"
@@ -166,7 +169,7 @@ build_recipe()
 			build_one "$name" "$tag" "$version" "$REPO"
 		fi
 	else
-		log "$name: no tags yet, only publishing nightlies"
+		log "$name: no release tags yet, only publishing nightlies"
 	fi
 
 	# nightly: head of the branch

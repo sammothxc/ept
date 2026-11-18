@@ -47,15 +47,38 @@ build_one() { printf '%%s %%s %%s\\n' "$1" "$2" "$3" >> %s; }
         calls = self.calls.read_text().splitlines() if self.calls.exists() else []
         return result, calls
 
-    def test_pin_ignores_newer_development_tags(self):
-        result, calls = self.run_recipes(['STABLE_TAG=v0.5'])
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+    def test_default_picks_newest_release_over_prereleases(self):
+        result, calls = self.run_recipes([''])
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(calls[0], 'pkg0 v0.5 0.5')
         self.assertIn('origin/HEAD', calls[1])
 
-    def test_unconfigured_recipe_keeps_existing_selection(self):
+    def test_release_tag_shapes(self):
+        for tag in ['v0.5dev2', 'v0.6dev1']:
+            self.git('tag', '-d', tag)
+        for tag in ['v0.5-dev1', 'v0.6rc1', 'v0.6-beta2', 'release-0.7', 'v0.10', '0.9']:
+            self.git('tag', tag)
         result, calls = self.run_recipes([''])
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(calls[0], 'pkg0 v0.10 0.10')
+
+    def test_only_prerelease_tags_publishes_nightly_only(self):
+        for tag in ['v0.4', 'v0.5']:
+            self.git('tag', '-d', tag)
+        result, calls = self.run_recipes([''])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('no release tags yet', result.stdout)
+        self.assertEqual(len(calls), 1)
+        self.assertIn('origin/HEAD', calls[0])
+
+    def test_pin_overrides_newest_release(self):
+        result, calls = self.run_recipes(['STABLE_TAG=v0.4'])
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(calls[0], 'pkg0 v0.4 0.4')
+
+    def test_pin_may_name_a_prerelease_tag(self):
+        result, calls = self.run_recipes(['STABLE_TAG=v0.6dev1'])
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(calls[0], 'pkg0 v0.6dev1 0.6dev1')
 
     def test_missing_pin_fails_before_building(self):
@@ -71,10 +94,10 @@ build_one() { printf '%%s %%s %%s\\n' "$1" "$2" "$3" >> %s; }
         self.assertIn('origin/HEAD', calls[0])
 
     def test_override_does_not_leak_between_recipes(self):
-        result, calls = self.run_recipes(['STABLE_TAG=v0.5', ''])
+        result, calls = self.run_recipes(['STABLE_TAG=v0.4', ''])
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(calls[0], 'pkg0 v0.5 0.5')
-        self.assertEqual(calls[2], 'pkg1 v0.6dev1 0.6dev1')
+        self.assertEqual(calls[0], 'pkg0 v0.4 0.4')
+        self.assertEqual(calls[2], 'pkg1 v0.5 0.5')
 
 
 if __name__ == '__main__':
