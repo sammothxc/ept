@@ -1,0 +1,7 @@
+# EPT recipe; add to the repository builder's recipes directory.
+DESC="Two-panel ANSI file manager"
+GIT=https://github.com/l00nix/ELKS-cmdr.git
+BUILD='ELKS="$ELKS" sh build.sh'
+FILES="build/cmdr:/bin/cmdr
+COPYING:/lib/cmdr/copying
+USAGE.TXT:/lib/cmdr/usage.txt"
