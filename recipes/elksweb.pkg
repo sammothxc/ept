@@ -1,13 +1,21 @@
-# elksweb: graphical web browser for ELKS
-DESC="Graphical web browser"
+# elksweb: direct graphics browser and WebNX Nano-X client
+DESC="Graphical web browser and Nano-X client"
 GIT=https://github.com/l00nix/ELKSWeb.git
 BRANCH=main
-BUILD="ELKSWEB_ELKS=$ELKS sh toolchain/build-external.sh"
+STABLE_TAG=v0.7
+# Pin the exact client subset tested with this release; no Nano-X server is built.
+BUILD="set -e
+mkdir -p build/ept-deps
+curl -fL https://github.com/l00nix/ELKSWeb/releases/download/v0.6/Microwindows-client-source.tar.gz -o build/ept-deps/client.tar.gz
+echo 'c56af8127e1abbc5fb4518f8a0995f681ec23e5df018d8e602e2d78b492a5dd1  build/ept-deps/client.tar.gz' | sha256sum -c -
+tar xzf build/ept-deps/client.tar.gz -C build/ept-deps
+ELKSWEB_ELKS=$ELKS MWDIR=build/ept-deps/microwindows-client sh toolchain/build-external.sh
+sh toolchain/stage-web-data.sh build/ept-root
+cp share/license.txt build/ept-root/lib/web/license.txt
+cat build/ept-deps/microwindows-client/LICENSE >> build/ept-root/lib/web/license.txt
+cp share/logo-source.txt build/ept-root/lib/web/logo-src.txt
+cp docs/NANOX-EXPERIMENT.md build/ept-root/lib/web/nanox.txt
+cp docs/RELEASE-0.7.md build/ept-root/lib/web/readme.txt"
 FILES="build/elksweb:/bin/elksweb
-share/welcome.htm:/lib/elksweb/welcome.htm
-share/elksweb.gif:/lib/elksweb/elksweb.gif
-share/color.htm:/lib/elksweb/color.htm
-share/elkswebc.gif:/lib/elksweb/elkswebc.gif
-share/chart.gif:/lib/elksweb/chart.gif
-share/license.txt:/lib/elksweb/license.txt
-share/logo-source.txt:/lib/elksweb/logo-src.txt"
+build/nanox/webnx:/bin/webnx
+build/ept-root/lib:/lib"
